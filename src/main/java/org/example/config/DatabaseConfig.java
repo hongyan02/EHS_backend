@@ -5,7 +5,7 @@ import java.sql.DriverManager;
 import java.sql.SQLException;
 
 public class DatabaseConfig {
-    private static final String URL = "jdbc:mysql://localhost:3306/ehs_db?useSSL=false&serverTimezone=UTC";
+    private static final String URL = "jdbc:mysql://localhost:3306/ehs_db?useSSL=false&serverTimezone=Asia/Shanghai";
     private static final String USERNAME = "root";
     private static final String PASSWORD = "123456";
 
@@ -17,4 +17,4 @@ public class DatabaseConfig {
             throw new SQLException("MySQL驱动加载失败", e);
         }
     }
-} 
+}

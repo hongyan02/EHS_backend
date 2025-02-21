@@ -18,3 +18,15 @@ CREATE TABLE IF NOT EXISTS check_items (
     update_time DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
     INDEX idx_create_time (create_time)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+CREATE TABLE IF NOT EXISTS alarm_info (
+    id VARCHAR(50) PRIMARY KEY,
+    equipment_code VARCHAR(50) NOT NULL,
+    alarm_type VARCHAR(50) NOT NULL,
+    alarm_name VARCHAR(100) NOT NULL,
+    alarm_start_time DATETIME NOT NULL,
+    alarm_end_time DATETIME,
+    load_time DATETIME NOT NULL,
+    INDEX idx_equipment_code (equipment_code),
+    INDEX idx_alarm_start_time (alarm_start_time)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
