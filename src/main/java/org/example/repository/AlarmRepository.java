@@ -13,9 +13,6 @@ public interface AlarmRepository extends JpaRepository<AlarmInfo, String> {
     // 查询在指定时间之后加载的报警信息
     List<AlarmInfo> findByLoadTimeAfter(Date lastCheckTime);
     
-    // 查询在指定时间范围内结束的报警
-    List<AlarmInfo> findByAlarmEndTimeBetween(Date startTime, Date endTime);
-    
     // 查询所有未结束的报警
     List<AlarmInfo> findByAlarmEndTimeIsNull();
     

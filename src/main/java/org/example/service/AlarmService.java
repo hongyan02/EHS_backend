@@ -1,7 +1,7 @@
 package org.example.service;
 
 import org.example.entity.AlarmInfo;
-import org.example.repository.AlarmInfoRepository;
+import org.example.repository.AlarmRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
@@ -16,22 +16,35 @@ public class AlarmService {
     private WebSocketService webSocketService;
 
     @Autowired
-    private AlarmInfoRepository alarmInfoRepository;
+    private AlarmRepository alarmRepository;
+    @Autowired
+    private AlarmStatusManager alarmStatusManager;
 
     @Scheduled(fixedRate = 60000) // 每分钟执行一次
     public void checkActiveAlarms() {
         // 获取所有未结束的报警
-        List<AlarmInfo> activeAlarms = alarmInfoRepository.findByAlarmEndTimeIsNull();
+        List<AlarmInfo> activeAlarms = alarmRepository.findByAlarmEndTimeIsNull();
         
-        // 推送每个活跃报警
+        // 推送每个活跃报警并更新状态管理器
         for (AlarmInfo alarm : activeAlarms) {
-            webSocketService.sendAlarmUpdate(alarm);
+            alarmStatusManager.addOrUpdateActiveAlarm(alarm);
         }
     }
-
+    public void confirmAlarmEnd(String alarmId) {
+        // 从活跃报警列表中移除该报警
+        if (alarmStatusManager.confirmAlarmEnd(alarmId)) {
+            // 可以在这里添加其他确认逻辑，比如记录确认时间等
+            webSocketService.sendAlarmStatus(alarmId, true);
+        }
+    }
     public void handleAlarmUpdate(AlarmInfo alarmInfo) {
         // 处理报警信息的业务逻辑
         processAlarmInfo(alarmInfo);
+        
+        // 更新状态管理器
+        if (alarmInfo.getAlarmEndTime() == null) {
+            alarmStatusManager.addOrUpdateActiveAlarm(alarmInfo);
+        }
         
         // 通过WebSocket发送更新
         webSocketService.sendAlarmUpdate(alarmInfo);
@@ -42,20 +55,19 @@ public class AlarmService {
         }
     }
 
-
-
     private Set<String> processedAlarms = new HashSet<>();
-
-    @Scheduled(fixedRate = 5000) // 每5秒执行一次
+    
+    // 移除@Scheduled注解，因为这个方法现在只作为内部使用
     public List<AlarmInfo> checkAlarms() {
         // 获取所有报警信息
-        List<AlarmInfo> alarms = alarmInfoRepository.findAll();
+        List<AlarmInfo> alarms = alarmRepository.findAll();
         
         for (AlarmInfo alarm : alarms) {
             String alarmKey = generateAlarmKey(alarm);
             
             // 检查是否是新的报警或者报警状态有更新
             if (!processedAlarms.contains(alarmKey)) {
+                // 只有在发现新报警或状态变化时才推送更新
                 webSocketService.sendAlarmUpdate(alarm);
                 processedAlarms.add(alarmKey);
             }
@@ -63,14 +75,13 @@ public class AlarmService {
         
         return alarms;
     }
-
     private void processAlarmInfo(AlarmInfo alarmInfo) {
         // 更新已处理的报警信息记录
         String alarmKey = generateAlarmKey(alarmInfo);
         processedAlarms.add(alarmKey);
         
         // 保存到数据库
-        alarmInfoRepository.save(alarmInfo);
+        alarmRepository.save(alarmInfo);
     }
 
     private String generateAlarmKey(AlarmInfo alarm) {
@@ -79,6 +90,6 @@ public class AlarmService {
                (alarm.getAlarmEndTime() != null ? alarm.getAlarmEndTime().getTime() : "active");
     }
     public List<AlarmInfo> getActiveAlarms() {
-        return alarmInfoRepository.findByAlarmEndTimeIsNull();
+        return alarmRepository.findByAlarmEndTimeIsNull();
     }
 }
